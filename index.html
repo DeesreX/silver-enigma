@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Satisfactory Calculator</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f1115;
+      --surface: #191c22;
+      --surface-2: #232936;
+      --text: #f5f7fb;
+      --muted: #a3afc2;
+      --accent: #ff9f1c;
+      --ok: #2ec27e;
+      --danger: #ff5d73;
+      --border: #303748;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    h1, h2, h3 {
+      margin: 0.5rem 0 1rem;
+      line-height: 1.2;
+    }
+
+    p { color: var(--muted); }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: 0.6rem 0.9rem;
+      border-radius: 0.55rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .tab-btn.active {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.9rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.8rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.55rem 0.6rem;
+      font: inherit;
+    }
+
+    textarea { min-height: 120px; }
+
+    .btn-row {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 0.8rem;
+    }
+
+    button {
+      border: 0;
+      border-radius: 0.55rem;
+      padding: 0.6rem 0.9rem;
+      font: inherit;
+      font-weight: 700;
+      background: var(--accent);
+      color: #1f1402;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #3a4151;
+      color: var(--text);
+    }
+
+    button.danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.6rem;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .chip button {
+      padding: 0.15rem 0.35rem;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      line-height: 1;
+      font-size: 0.8rem;
+    }
+
+    .results {
+      margin-top: 1rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .result-card {
+      border: 1px solid var(--border);
+      border-radius: 0.7rem;
+      padding: 0.8rem;
+      background: var(--surface-2);
+    }
+
+    .result-card h3 { margin-bottom: 0.5rem; }
+
+    ul { margin: 0; padding-left: 1.1rem; }
+
+    .ok { color: var(--ok); }
+    .warn { color: var(--danger); }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Configurable Satisfactory Calculator</h1>
+    <p>Define resources and machines in the <strong>Configuration</strong> tab, then calculate throughput in <strong>Calculator</strong>.</p>
+
+    <div class="tabs">
+      <button id="tab-config" class="tab-btn active" type="button">Configuration</button>
+      <button id="tab-calc" class="tab-btn" type="button">Calculator</button>
+    </div>
+
+    <section id="config-page">
+      <article class="panel">
+        <h2>Resources</h2>
+        <div class="grid">
+          <div>
+            <label for="resource-name">Resource name</label>
+            <input id="resource-name" placeholder="Iron Ore" />
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="add-resource" type="button">Add resource</button>
+        </div>
+        <div id="resource-list" class="chip-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Machines</h2>
+        <div class="grid">
+          <div>
+            <label for="machine-name">Machine name</label>
+            <input id="machine-name" placeholder="Smelter" />
+          </div>
+          <div>
+            <label for="machine-output-resource">Output resource</label>
+            <select id="machine-output-resource"></select>
+          </div>
+          <div>
+            <label for="machine-output-rate">Output rate / min</label>
+            <input id="machine-output-rate" type="number" min="0" step="0.01" placeholder="30" />
+          </div>
+        </div>
+
+        <h3>Inputs</h3>
+        <div class="grid">
+          <div>
+            <label for="machine-input-resource">Input resource</label>
+            <select id="machine-input-resource"></select>
+          </div>
+          <div>
+            <label for="machine-input-rate">Input rate / min</label>
+            <input id="machine-input-rate" type="number" min="0" step="0.01" placeholder="30" />
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="add-machine-input" class="secondary" type="button">Add input</button>
+        </div>
+        <div id="machine-input-list" class="chip-list"></div>
+
+        <div class="btn-row">
+          <button id="add-machine" type="button">Add machine</button>
+        </div>
+        <div id="machine-list" class="chip-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Import / Export configuration (JSON)</h2>
+        <label for="config-json">Config JSON</label>
+        <textarea id="config-json"></textarea>
+        <div class="btn-row">
+          <button id="import-config" type="button">Import JSON</button>
+          <button id="reset-default" class="danger" type="button">Reset to defaults</button>
+        </div>
+      </article>
+    </section>
+
+    <section id="calc-page" class="hidden">
+      <article class="panel">
+        <h2>Calculator</h2>
+        <div class="grid">
+          <div>
+            <label for="calc-machine">Machine</label>
+            <select id="calc-machine"></select>
+          </div>
+          <div>
+            <label for="calc-count">Machine count</label>
+            <input id="calc-count" type="number" min="1" step="1" value="1" />
+          </div>
+          <div>
+            <label for="calc-clock">Clock speed (%)</label>
+            <input id="calc-clock" type="number" min="1" step="1" value="100" />
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="run-calc" type="button">Calculate</button>
+        </div>
+
+        <div id="calc-results" class="results"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'satisfactory-calculator-config-v1';
+
+    const defaultConfig = {
+      resources: ['Iron Ore', 'Iron Ingot'],
+      machines: [
+        {
+          id: crypto.randomUUID(),
+          name: 'Smelter',
+          output: { resource: 'Iron Ingot', rate: 30 },
+          inputs: [{ resource: 'Iron Ore', rate: 30 }]
+        }
+      ]
+    };
+
+    let config = loadConfig();
+    let pendingMachineInputs = [];
+
+    const el = {
+      tabConfig: document.getElementById('tab-config'),
+      tabCalc: document.getElementById('tab-calc'),
+      configPage: document.getElementById('config-page'),
+      calcPage: document.getElementById('calc-page'),
+      resourceName: document.getElementById('resource-name'),
+      addResource: document.getElementById('add-resource'),
+      resourceList: document.getElementById('resource-list'),
+      machineName: document.getElementById('machine-name'),
+      machineOutputResource: document.getElementById('machine-output-resource'),
+      machineOutputRate: document.getElementById('machine-output-rate'),
+      machineInputResource: document.getElementById('machine-input-resource'),
+      machineInputRate: document.getElementById('machine-input-rate'),
+      addMachineInput: document.getElementById('add-machine-input'),
+      machineInputList: document.getElementById('machine-input-list'),
+      addMachine: document.getElementById('add-machine'),
+      machineList: document.getElementById('machine-list'),
+      configJson: document.getElementById('config-json'),
+      importConfig: document.getElementById('import-config'),
+      resetDefault: document.getElementById('reset-default'),
+      calcMachine: document.getElementById('calc-machine'),
+      calcCount: document.getElementById('calc-count'),
+      calcClock: document.getElementById('calc-clock'),
+      runCalc: document.getElementById('run-calc'),
+      calcResults: document.getElementById('calc-results')
+    };
+
+    bindEvents();
+    renderAll();
+
+    function loadConfig() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(defaultConfig);
+      try {
+        const parsed = JSON.parse(raw);
+        return sanitizeConfig(parsed);
+      } catch {
+        return structuredClone(defaultConfig);
+      }
+    }
+
+    function sanitizeConfig(value) {
+      const resources = Array.isArray(value?.resources)
+        ? [...new Set(value.resources.map(r => String(r).trim()).filter(Boolean))]
+        : [];
+
+      const machines = Array.isArray(value?.machines)
+        ? value.machines
+          .map(m => ({
+            id: m?.id || crypto.randomUUID(),
+            name: String(m?.name || '').trim(),
+            output: {
+              resource: String(m?.output?.resource || '').trim(),
+              rate: Number(m?.output?.rate || 0)
+            },
+            inputs: Array.isArray(m?.inputs)
+              ? m.inputs
+                .map(i => ({
+                  resource: String(i?.resource || '').trim(),
+                  rate: Number(i?.rate || 0)
+                }))
+                .filter(i => i.resource && i.rate > 0)
+              : []
+          }))
+          .filter(m => m.name && m.output.resource && m.output.rate > 0)
+        : [];
+
+      const allResources = [...new Set([
+        ...resources,
+        ...machines.map(m => m.output.resource),
+        ...machines.flatMap(m => m.inputs.map(i => i.resource))
+      ])];
+
+      return { resources: allResources, machines };
+    }
+
+    function saveConfig() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    }
+
+    function bindEvents() {
+      el.tabConfig.addEventListener('click', () => switchTab('config'));
+      el.tabCalc.addEventListener('click', () => switchTab('calc'));
+
+      el.addResource.addEventListener('click', () => {
+        const name = el.resourceName.value.trim();
+        if (!name) return;
+        if (config.resources.includes(name)) {
+          alert('Resource already exists.');
+          return;
+        }
+        config.resources.push(name);
+        el.resourceName.value = '';
+        saveAndRender();
+      });
+
+      el.addMachineInput.addEventListener('click', () => {
+        const resource = el.machineInputResource.value;
+        const rate = Number(el.machineInputRate.value);
+        if (!resource || rate <= 0) {
+          alert('Pick an input resource and set a positive rate.');
+          return;
+        }
+        pendingMachineInputs.push({ resource, rate });
+        el.machineInputRate.value = '';
+        renderPendingInputs();
+      });
+
+      el.addMachine.addEventListener('click', () => {
+        const name = el.machineName.value.trim();
+        const outputResource = el.machineOutputResource.value;
+        const outputRate = Number(el.machineOutputRate.value);
+
+        if (!name || !outputResource || outputRate <= 0) {
+          alert('Machine name, output resource, and output rate are required.');
+          return;
+        }
+
+        config.machines.push({
+          id: crypto.randomUUID(),
+          name,
+          output: { resource: outputResource, rate: outputRate },
+          inputs: [...pendingMachineInputs]
+        });
+
+        el.machineName.value = '';
+        el.machineOutputRate.value = '';
+        pendingMachineInputs = [];
+        renderPendingInputs();
+        saveAndRender();
+      });
+
+      el.importConfig.addEventListener('click', () => {
+        try {
+          const parsed = JSON.parse(el.configJson.value);
+          config = sanitizeConfig(parsed);
+          pendingMachineInputs = [];
+          saveAndRender();
+        } catch {
+          alert('Invalid JSON.');
+        }
+      });
+
+      el.resetDefault.addEventListener('click', () => {
+        if (!confirm('Reset configuration to defaults?')) return;
+        config = structuredClone(defaultConfig);
+        pendingMachineInputs = [];
+        saveAndRender();
+      });
+
+      el.runCalc.addEventListener('click', runCalculation);
+    }
+
+    function saveAndRender() {
+      saveConfig();
+      renderAll();
+    }
+
+    function switchTab(tab) {
+      const configTab = tab === 'config';
+      el.tabConfig.classList.toggle('active', configTab);
+      el.tabCalc.classList.toggle('active', !configTab);
+      el.configPage.classList.toggle('hidden', !configTab);
+      el.calcPage.classList.toggle('hidden', configTab);
+    }
+
+    function renderAll() {
+      renderResourceSelects();
+      renderResources();
+      renderMachines();
+      renderCalcMachines();
+      renderPendingInputs();
+      el.configJson.value = JSON.stringify(config, null, 2);
+      if (el.calcResults.innerHTML.trim() === '') {
+        runCalculation();
+      }
+    }
+
+    function renderResourceSelects() {
+      const options = config.resources.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+      const hasResources = config.resources.length > 0;
+
+      el.machineOutputResource.innerHTML = hasResources ? options : '<option value="">No resources</option>';
+      el.machineInputResource.innerHTML = hasResources ? options : '<option value="">No resources</option>';
+    }
+
+    function renderResources() {
+      el.resourceList.innerHTML = '';
+
+      config.resources.forEach((resource) => {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.innerHTML = `${escapeHtml(resource)} <button type="button" aria-label="Remove ${escapeHtml(resource)}">✕</button>`;
+
+        chip.querySelector('button').addEventListener('click', () => {
+          const inUse = config.machines.some(machine =>
+            machine.output.resource === resource || machine.inputs.some(i => i.resource === resource)
+          );
+
+          if (inUse) {
+            alert('Cannot remove a resource used by any machine.');
+            return;
+          }
+
+          config.resources = config.resources.filter(r => r !== resource);
+          saveAndRender();
+        });
+
+        el.resourceList.append(chip);
+      });
+    }
+
+    function renderPendingInputs() {
+      el.machineInputList.innerHTML = '';
+
+      pendingMachineInputs.forEach((input, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.innerHTML = `${escapeHtml(input.resource)} (${input.rate}/min) <button type="button" aria-label="Remove input">✕</button>`;
+        chip.querySelector('button').addEventListener('click', () => {
+          pendingMachineInputs.splice(idx, 1);
+          renderPendingInputs();
+        });
+        el.machineInputList.append(chip);
+      });
+    }
+
+    function renderMachines() {
+      el.machineList.innerHTML = '';
+
+      config.machines.forEach((machine) => {
+        const inputText = machine.inputs.length
+          ? machine.inputs.map(i => `${i.resource}: ${i.rate}/min`).join(', ')
+          : 'No inputs';
+
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.innerHTML = `${escapeHtml(machine.name)} → ${escapeHtml(machine.output.resource)} (${machine.output.rate}/min) | In: ${escapeHtml(inputText)} <button type="button" aria-label="Remove ${escapeHtml(machine.name)}">✕</button>`;
+        chip.querySelector('button').addEventListener('click', () => {
+          config.machines = config.machines.filter(m => m.id !== machine.id);
+          saveAndRender();
+        });
+        el.machineList.append(chip);
+      });
+    }
+
+    function renderCalcMachines() {
+      if (!config.machines.length) {
+        el.calcMachine.innerHTML = '<option value="">No machines configured</option>';
+        return;
+      }
+
+      el.calcMachine.innerHTML = config.machines
+        .map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`)
+        .join('');
+    }
+
+    function runCalculation() {
+      const machine = config.machines.find(m => m.id === el.calcMachine.value) || config.machines[0];
+      if (!machine) {
+        el.calcResults.innerHTML = '<div class="result-card warn">No machine configured yet.</div>';
+        return;
+      }
+
+      const count = Math.max(1, Number(el.calcCount.value) || 1);
+      const clockMultiplier = Math.max(0.01, (Number(el.calcClock.value) || 100) / 100);
+
+      const outputTotal = machine.output.rate * count * clockMultiplier;
+      const inputs = machine.inputs.map(input => ({
+        ...input,
+        total: input.rate * count * clockMultiplier
+      }));
+
+      const machineCard = `
+        <div class="result-card">
+          <h3>Production</h3>
+          <ul>
+            <li>Machine: <strong>${escapeHtml(machine.name)}</strong></li>
+            <li>Count: <strong>${count}</strong></li>
+            <li>Clock speed: <strong>${(clockMultiplier * 100).toFixed(2)}%</strong></li>
+            <li class="ok">Output: <strong>${outputTotal.toFixed(2)} / min</strong> ${escapeHtml(machine.output.resource)}</li>
+          </ul>
+        </div>`;
+
+      const inputItems = inputs.length
+        ? inputs.map(i => `<li>${escapeHtml(i.resource)}: <strong>${i.total.toFixed(2)} / min</strong></li>`).join('')
+        : '<li>No input resources required.</li>';
+
+      const inputCard = `
+        <div class="result-card">
+          <h3>Required Inputs</h3>
+          <ul>${inputItems}</ul>
+        </div>`;
+
+      el.calcResults.innerHTML = machineCard + inputCard;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+  </script>
+</body>
+</html>
