@@ -261,7 +261,11 @@
             <select id="calc-machine"></select>
           </div>
           <div>
-            <label for="calc-count">Machine count</label>
+            <label for="calc-nodes">Node count</label>
+            <input id="calc-nodes" type="number" min="1" step="1" value="1" />
+          </div>
+          <div>
+            <label for="calc-count">Machines per node</label>
             <input id="calc-count" type="number" min="1" step="1" value="1" />
           </div>
           <div>
@@ -317,6 +321,7 @@
       importConfig: document.getElementById('import-config'),
       resetDefault: document.getElementById('reset-default'),
       calcMachine: document.getElementById('calc-machine'),
+      calcNodes: document.getElementById('calc-nodes'),
       calcCount: document.getElementById('calc-count'),
       calcClock: document.getElementById('calc-clock'),
       runCalc: document.getElementById('run-calc'),
@@ -560,7 +565,9 @@
         return;
       }
 
-      const count = Math.max(1, Number(el.calcCount.value) || 1);
+      const nodes = Math.max(1, Number(el.calcNodes.value) || 1);
+      const machinesPerNode = Math.max(1, Number(el.calcCount.value) || 1);
+      const count = nodes * machinesPerNode;
       const clockMultiplier = Math.max(0.01, (Number(el.calcClock.value) || 100) / 100);
 
       const outputTotal = machine.output.rate * count * clockMultiplier;
@@ -574,7 +581,9 @@
           <h3>Production</h3>
           <ul>
             <li>Machine: <strong>${escapeHtml(machine.name)}</strong></li>
-            <li>Count: <strong>${count}</strong></li>
+            <li>Nodes: <strong>${nodes}</strong></li>
+            <li>Machines per node: <strong>${machinesPerNode}</strong></li>
+            <li>Total machine count: <strong>${count}</strong></li>
             <li>Clock speed: <strong>${(clockMultiplier * 100).toFixed(2)}%</strong></li>
             <li class="ok">Output: <strong>${outputTotal.toFixed(2)} / min</strong> ${escapeHtml(machine.output.resource)}</li>
           </ul>
